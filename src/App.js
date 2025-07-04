@@ -1,20 +1,19 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Marketplace from './pages/Marketplace';
-import Chatroom from './pages/Chatroom';
-import Profile from './pages/Profile';
+// src/App.js
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import Home from "./pages/Home";
+import Chat from "./pages/Chat";
+import Market from "./pages/Market";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
     <Router>
-      <nav style={{ padding: '10px', background: '#333' }}>
-        <Link to="/" style={{ color: '#fff', marginRight: '10px' }}>Marketplace</Link>
-        <Link to="/chat" style={{ color: '#fff', marginRight: '10px' }}>Chatroom</Link>
-        <Link to="/profile" style={{ color: '#fff' }}>Profile</Link>
-      </nav>
       <Routes>
-        <Route path="/" element={<Marketplace />} />
-        <Route path="/chat" element={<Chatroom />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/market" element={<Market />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
