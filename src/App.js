@@ -7,6 +7,8 @@ import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Market from "./pages/Market";
 import Profile from "./pages/Profile";
+import InboxList from "./pages/InboxList";   // ✅ Correct import name
+import SuccessScreen from "./pages/SuccessScreen";  // ✅ Optional
 import Login from "./pages/Login";
 
 function App() {
@@ -48,6 +50,8 @@ function App() {
             <Route path="/chat" element={<Chat />} />
             <Route path="/market" element={<Market />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/inbox/:uid" element={<InboxList />} /> {/* ✅ Right name */}
+            <Route path="/success" element={<SuccessScreen />} /> {/* ✅ If needed */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         )}
