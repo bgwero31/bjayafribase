@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { db, storage } from "../firebase";
-import { ref as dbRef, push, onValue } from "firebase/database";
+import { db, storage, auth } from "../firebase";
+import { ref as dbRef, push, onValue, remove } from "firebase/database";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 export default function Chat() {
-  const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
+
+  const user = auth.currentUser;
 
   useEffect(() => {
     const chatRef = dbRef(db, "messages");
@@ -21,7 +23,6 @@ export default function Chat() {
         setMessages([]);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -30,22 +31,26 @@ export default function Chat() {
   }, [messages]);
 
   const sendMessage = () => {
-    if (name && message.trim() !== "") {
-      push(dbRef(db, "messages"), {
-        name,
-        text: message,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        type: "text",
-      });
-      setMessage("");
-    }
+    if (!message.trim() || !user) return;
+
+    const newMsg = {
+      uid: user.uid,
+      name: user.displayName || "Anonymous",
+      avatar: user.photoURL || "",
+      text: message,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      type: "text",
+      replyTo: replyTo ? replyTo.text : null,
+    };
+
+    push(dbRef(db, "messages"), newMsg);
+    setMessage("");
+    setReplyTo(null);
   };
 
   const handleImageUpload = (e) => {
-    if (!name) return alert("Please enter your name first");
-
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !user) return;
 
     const fileRef = storageRef(storage, `chatImages/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(fileRef, file);
@@ -53,16 +58,17 @@ export default function Chat() {
     uploadTask.on(
       "state_changed",
       null,
-      (error) => {
-        console.error("Upload failed", error);
-      },
+      (error) => console.error("Upload failed", error),
       () => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           push(dbRef(db, "messages"), {
-            name,
+            uid: user.uid,
+            name: user.displayName || "Anonymous",
+            avatar: user.photoURL || "",
             imageUrl: downloadURL,
             time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             type: "image",
+            replyTo: replyTo ? replyTo.text : null,
           });
         });
       }
@@ -73,6 +79,20 @@ export default function Chat() {
     setMessage((prev) => prev + emoji);
   };
 
+  const handleLongPress = (msgId, msgUid) => {
+    if (msgUid === user?.uid) {
+      if (window.confirm("Delete this message?")) {
+        remove(dbRef(db, `messages/${msgId}`));
+      }
+    }
+  };
+
+  let pressTimer;
+  const startPressTimer = (msgId, msgUid) => {
+    pressTimer = setTimeout(() => handleLongPress(msgId, msgUid), 700);
+  };
+  const cancelPressTimer = () => clearTimeout(pressTimer);
+
   return (
     <div style={chatWrapper}>
       <div style={chatHeader}>
@@ -81,10 +101,15 @@ export default function Chat() {
 
       <div style={messagesContainer}>
         {messages.map((msg) => {
-          const isOwn = msg.name === name;
+          const isOwn = msg.uid === user?.uid;
           return (
             <div
               key={msg.id}
+              onTouchStart={() => startPressTimer(msg.id, msg.uid)}
+              onTouchEnd={cancelPressTimer}
+              onMouseDown={() => startPressTimer(msg.id, msg.uid)}
+              onMouseUp={cancelPressTimer}
+              onDoubleClick={() => !isOwn && setReplyTo(msg)} // reply on double click
               style={{
                 ...msgStyle,
                 alignSelf: isOwn ? "flex-end" : "flex-start",
@@ -94,17 +119,30 @@ export default function Chat() {
                 borderTopLeftRadius: isOwn ? "10px" : 0,
               }}
             >
-              <div style={{ fontWeight: "bold", marginBottom: "4px" }}>{msg.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                {msg.avatar && (
+                  <img src={msg.avatar} alt="avatar" style={{ width: 24, height: 24, borderRadius: "50%" }} />
+                )}
+                <strong>{msg.name}</strong>
+              </div>
+
+              {msg.replyTo && (
+                <div style={{ fontStyle: "italic", fontSize: 12, marginTop: 4, opacity: 0.6 }}>
+                  ↪️ {msg.replyTo}
+                </div>
+              )}
+
               {msg.type === "image" ? (
                 <img
                   src={msg.imageUrl}
-                  alt="sent pic"
-                  style={{ maxWidth: "200px", borderRadius: "8px", cursor: "pointer" }}
+                  alt="sent"
+                  style={{ maxWidth: "200px", borderRadius: "8px", marginTop: "6px", cursor: "pointer" }}
                   onClick={() => window.open(msg.imageUrl, "_blank")}
                 />
               ) : (
-                <div>{msg.text}</div>
+                <div style={{ marginTop: "6px" }}>{msg.text}</div>
               )}
+
               <div style={timeStyle}>{msg.time}</div>
             </div>
           );
@@ -113,67 +151,53 @@ export default function Chat() {
       </div>
 
       <div style={inputWrapper}>
-        {!name ? (
+        {replyTo && (
+          <div style={{ fontSize: 13, marginBottom: 5, color: "#aaa" }}>
+            Replying to: <strong>{replyTo.text || "Image"}</strong>{" "}
+            <button onClick={() => setReplyTo(null)} style={{ marginLeft: 8 }}>❌</button>
+          </div>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <input
-            style={inputStyle}
-            placeholder="Enter your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            style={{ ...inputStyle, flex: 1 }}
+            placeholder="Type your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
-        ) : (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <input
-                style={{ ...inputStyle, flex: 1 }}
-                placeholder="Type your message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              />
 
-              <label style={iconButton} title="Send Image">
-                📎
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleImageUpload}
-                />
-              </label>
+          <label style={iconButton} title="Send Image">
+            📎
+            <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageUpload} />
+          </label>
 
-              <button
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                style={iconButton}
-                title="Add Emoji"
+          <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={iconButton} title="Add Emoji">
+            😊
+          </button>
+        </div>
+
+        <button onClick={sendMessage} style={btnStyle}>Send</button>
+
+        {showEmojiPicker && (
+          <div style={emojiPicker}>
+            {["😀", "😂", "😍", "😎", "👍", "🙏", "🔥", "❤️"].map((emoji) => (
+              <span
+                key={emoji}
+                style={{ fontSize: "24px", cursor: "pointer", margin: "5px" }}
+                onClick={() => addEmoji(emoji)}
               >
-                😊
-              </button>
-            </div>
-
-            <button onClick={sendMessage} style={btnStyle}>
-              Send
-            </button>
-
-            {showEmojiPicker && (
-              <div style={emojiPicker}>
-                {["😀", "😂", "😍", "😎", "👍", "🙏", "🔥", "❤️"].map((emoji) => (
-                  <span
-                    key={emoji}
-                    style={{ fontSize: "24px", cursor: "pointer", margin: "5px" }}
-                    onClick={() => addEmoji(emoji)}
-                  >
-                    {emoji}
-                  </span>
-                ))}
-              </div>
-            )}
-          </>
+                {emoji}
+              </span>
+            ))}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+// Styles
 const chatWrapper = {
   display: "flex",
   flexDirection: "column",
@@ -211,7 +235,7 @@ const msgStyle = {
 
 const timeStyle = {
   fontSize: "11px",
-  color: "#888",
+  color: "#aaa",
   textAlign: "right",
   marginTop: "4px",
 };
@@ -243,11 +267,10 @@ const btnStyle = {
 
 const iconButton = {
   cursor: "pointer",
-  fontSize: "24px",
+  fontSize: "22px",
   background: "transparent",
   border: "none",
   color: "#00ffcc",
-  userSelect: "none",
 };
 
 const emojiPicker = {
