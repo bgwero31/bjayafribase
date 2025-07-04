@@ -4,11 +4,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 import Home from "./pages/Home";
-import Chat from "./pages/Chatroom";          // fixed import name
-import Market from "./pages/Marketplace";     // fixed import name
+import Chat from "./pages/Chat";          // matches your Chat.js
+import Market from "./pages/Market";     // matches your Market.js
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
-// Removed Inbox import because you don't have Inbox.js
 
 function App() {
   const [user, setUser] = useState(null);
@@ -35,7 +34,6 @@ function App() {
     <Router>
       <Routes>
         {!user ? (
-          // Redirect all routes to login if not logged in (like second version)
           <Route path="*" element={<Login />} />
         ) : (
           <>
@@ -43,7 +41,6 @@ function App() {
             <Route path="/chat" element={<Chat />} />
             <Route path="/market" element={<Market />} />
             <Route path="/profile" element={<Profile />} />
-            {/* Remove /inbox route since you don't have Inbox.js */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         )}
