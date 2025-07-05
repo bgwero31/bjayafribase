@@ -9,7 +9,7 @@ function App() {
       fontFamily: "Poppins, sans-serif",
       padding: "20px"
     }}>
-      <h1>🔥 Welcome to Afribase</h1>
+      <h1>🔥 Welcome to Africa base by bjay</h1>
       <p>Connect • Chat • Hustle • Sell</p>
 
       <div style={{ marginTop: "40px" }}>
