@@ -1,6 +1,10 @@
 import React from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import Chat from "./pages/Chat";
+import Market from "./pages/Market";
+import Profile from "./pages/Profile";
 
-function App() {
+function Home() {
   return (
     <div style={{
       background: "#121212",
@@ -13,9 +17,9 @@ function App() {
       <p>Connect • Chat • Hustle • Sell</p>
 
       <div style={{ marginTop: "40px" }}>
-        <a href="/chat" style={btnStyle}>💬 Chat Room</a><br />
-        <a href="/market" style={btnStyle}>🛍️ Marketplace</a><br />
-        <a href="/profile" style={btnStyle}>👤 My Profile</a>
+        <Link to="/chat" style={btnStyle}>💬 Chat Room</Link><br />
+        <Link to="/market" style={btnStyle}>🛍️ Marketplace</Link><br />
+        <Link to="/profile" style={btnStyle}>👤 My Profile</Link>
       </div>
     </div>
   );
@@ -31,5 +35,18 @@ const btnStyle = {
   margin: "10px 0",
   display: "inline-block"
 };
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/market" element={<Market />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;
