@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 
-export default function Home() {
+export default function Home({ onNavigate }) {
   const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
@@ -55,9 +54,9 @@ export default function Home() {
 
       {/* Navigation Buttons */}
       <main style={mainStyle}>
-        <Link to="/chat" style={button3D}>💬 Chat Room</Link>
-        <Link to="/market" style={button3D}>🛍️ Marketplace</Link>
-        <Link to="/profile" style={button3D}>👤 My Profile</Link>
+        <button onClick={() => onNavigate("chat")} style={button3D}>💬 Chat Room</button>
+        <button onClick={() => onNavigate("market")} style={button3D}>🛍️ Marketplace</button>
+        <button onClick={() => onNavigate("profile")} style={button3D}>👤 My Profile</button>
       </main>
 
       {/* African Proverb */}
@@ -73,7 +72,7 @@ export default function Home() {
   );
 }
 
-// Styles
+// Styles stay the same!
 const containerStyle = {
   minHeight: "100vh",
   fontFamily: "'Poppins', sans-serif",
