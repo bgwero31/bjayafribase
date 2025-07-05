@@ -8,30 +8,30 @@ import Profile from "./pages/Profile";
 export default function App() {
   const [page, setPage] = useState("home");
 
-  let CurrentPage;
-  switch (page) {
-    case "chat":
-      CurrentPage = Chat;
-      break;
-    case "market":
-      CurrentPage = Market;
-      break;
-    case "profile":
-      CurrentPage = Profile;
-      break;
-    default:
-      CurrentPage = Home;
-  }
+  const renderPage = () => {
+    if (page === "chat") return <Chat />;
+    if (page === "market") return <Market />;
+    if (page === "profile") return <Profile />;
+    return <Home onNavigate={setPage} />;
+  };
 
   return (
     <div>
-      <nav style={{ margin: "20px" }}>
+      <nav style={navStyle}>
         <button onClick={() => setPage("home")}>🏠 Home</button>
         <button onClick={() => setPage("chat")}>💬 Chat</button>
         <button onClick={() => setPage("market")}>🛍️ Market</button>
         <button onClick={() => setPage("profile")}>👤 Profile</button>
       </nav>
-      <CurrentPage />
+      {renderPage()}
     </div>
   );
 }
+
+const navStyle = {
+  display: "flex",
+  gap: "20px",
+  padding: "20px",
+  background: "#222",
+  color: "#fff"
+};
