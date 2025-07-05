@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Home from "./Home";   // ✅ make sure the path is correct!
+import Home from "./Home"; // ✅ Adjust path if needed
 import Chat from "./pages/Chat";
 import Market from "./pages/Market";
 import Profile from "./pages/Profile";
